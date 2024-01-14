@@ -3,11 +3,17 @@
 """ Apply dynamic range compression/expansion
     and silence removal to AntennaPod podcasts """
 import sys
-from dataclasses import dataclass
-from pathlib import Path
+from dataclasses import (
+    dataclass,
+)
+from pathlib import (
+    Path,
+)
 import ffmpeg  # type: ignore
 import ffpb  # type: ignore
-from rich import print
+from rich import (
+    print,
+)
 
 """ Edited path"""
 outdir = Path.home() / "storage/shared/" / "antennapodcomp"
@@ -23,7 +29,9 @@ class Prober:
 
     file: str
 
-    def __post_init__(self):
+    def __post_init__(
+        self,
+    ):
         try:
             self.probe = ffmpeg.probe(str(self.file))
             astream = self.probe["streams"][0]
@@ -37,10 +45,15 @@ class Prober:
         except KeyError:  # missing metadata
             tags = {}
             tags["comment"] = ""
-        self.comment = tags.get("comment", "")
+        self.comment = tags.get(
+            "comment",
+            "",
+        )
 
 
-def alreadyCompandt(i: Path) -> bool:
+def alreadyCompandt(
+    i: Path,
+) -> bool:
     probe = Prober(str(i))
     if "compandt" in probe.comment:
         print(f'"{i.name}" already processed')
@@ -49,7 +62,12 @@ def alreadyCompandt(i: Path) -> bool:
         return False
 
 
-def compandit(i, o, sr=False, srmath=False):
+def compandit(
+    i,
+    o,
+    sr=False,
+    srmath=False,
+):
     """Compand with ffmpeg, progress bar with ffpb"""
     i = str(i)
     o = str(o)
@@ -83,7 +101,12 @@ def compandit(i, o, sr=False, srmath=False):
     audio_bitrate=probe.bitrate
     but I am using 64k to save space 😞 """
     stream = ffmpeg.output(
-        audio, o, f="mp3", audio_bitrate="64k", metadata="comment=compandt", map="0:1?"
+        audio,
+        o,
+        f="mp3",
+        audio_bitrate="64k",
+        metadata="comment=compandt",
+        map="0:1?",
     )  # saves thumbnail
 
     stream = ffmpeg.overwrite_output(stream)
@@ -99,10 +122,14 @@ def compandit(i, o, sr=False, srmath=False):
             minutes = int((d1 - d2) / 60)
             seconds = int((d1 - d2) % 60)
             portion = int((d1 - d2) / d1 * 100)
-            print(f"{minutes} minutes {seconds} seconds. {portion}% silent.")
+            print(
+                f"{minutes} minutes {seconds} seconds. {portion}% silent."
+            )
 
 
-def delFile(show: Path):
+def delFile(
+    show: Path,
+):
     """Delete contents of temp folder, unless -k passed"""
     keep = False
     if len(sys.argv) > 1:
@@ -115,9 +142,16 @@ def delFile(show: Path):
 
 # File choosing logic
 if not any(pods.iterdir()):
-    print("[bright_red]Work Dir empty: [/bright_red]" + f"{pods.name}")
+    print(
+        "[bright_red]Work Dir empty: [/bright_red]"
+        + f"{pods.name}"
+    )
     if any(Path(outdir).iterdir()):
-        print("[bright_green]" + "Output directory not empty!" + "[/bright_green]")
+        print(
+            "[bright_green]"
+            + "Output directory not empty!"
+            + "[/bright_green]"
+        )
 
 for podsAuthor in pods.iterdir():
     parent = Path(podsAuthor)
@@ -127,11 +161,18 @@ for podsAuthor in pods.iterdir():
         parentCompandPath.mkdir(exist_ok=True)
         sortedPaths = sorted(parent.iterdir())
         for mp3Path in sortedPaths:
-            mp3CompandPath = Path(parentCompandPath / mp3Path.name)
+            mp3CompandPath = Path(
+                parentCompandPath / mp3Path.name
+            )
             if not alreadyCompandt(mp3Path):
                 """Escape whole iteration w/ ctrl C"""
                 try:
-                    compandit(mp3Path, mp3CompandPath, sr=SR, srmath=True)
+                    compandit(
+                        mp3Path,
+                        mp3CompandPath,
+                        sr=SR,
+                        srmath=True,
+                    )
                     # Extract and Place APIC images in file
                 except KeyboardInterrupt:
                     raise
@@ -142,5 +183,7 @@ for podsAuthor in pods.iterdir():
 
         parent.rmdir()
         if not any(parentCompandPath.iterdir()):
-            print(f"[red]Nothing in[/red] {parentCompandPath.name}")
+            print(
+                f"[red]Nothing in[/red] {parentCompandPath.name}"
+            )
             parentCompandPath.rmdir()
