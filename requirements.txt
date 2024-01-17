@@ -1,4 +1,3 @@
-ffmpeg-python
-tqdm
-ffpb
-rich
+ffmpeg-python>=0.2.0
+ffpb>=0.4.1
+rich>=13.5.2
