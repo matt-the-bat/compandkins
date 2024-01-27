@@ -3,17 +3,11 @@
 """ Apply dynamic range compression/expansion
     and silence removal to AntennaPod podcasts """
 import sys
-from dataclasses import (
-    dataclass,
-)
-from pathlib import (
-    Path,
-)
+from dataclasses import dataclass
+from pathlib import Path
 import ffmpeg  # type: ignore
 import ffpb  # type: ignore
-from rich import (
-    print,
-)
+from rich import print
 
 """ Edited path"""
 outdir = Path.home() / "storage/shared/" / "antennapodcomp"
@@ -29,9 +23,7 @@ class Prober:
 
     file: str
 
-    def __post_init__(
-        self,
-    ):
+    def __post_init__(self):
         try:
             self.probe = ffmpeg.probe(str(self.file))
             astream = self.probe["streams"][0]
@@ -45,15 +37,10 @@ class Prober:
         except KeyError:  # missing metadata
             tags = {}
             tags["comment"] = ""
-        self.comment = tags.get(
-            "comment",
-            "",
-        )
+        self.comment = tags.get("comment", "")
 
 
-def alreadyCompandt(
-    i: Path,
-) -> bool:
+def alreadyCompandt(i: Path) -> bool:
     probe = Prober(str(i))
     if "compandt" in probe.comment:
         print(f'"{i.name}" already processed')
@@ -62,12 +49,7 @@ def alreadyCompandt(
         return False
 
 
-def compandit(
-    i,
-    o,
-    sr=False,
-    srmath=False,
-):
+def compandit(i, o, sr=False, srmath=False):
     """Compand with ffmpeg, progress bar with ffpb"""
     i = str(i)
     o = str(o)
@@ -94,8 +76,8 @@ def compandit(
             "silenceremove",
             stop_periods="-1",
             detection="peak",
-            stop_duration="0.3",  # was 0.2
-            stop_threshold="-29dB",
+            stop_duration="0.2",  # was 0.2
+            stop_threshold="-31dB",  # was -29dB
         )
     """ originally
     audio_bitrate=probe.bitrate
@@ -127,9 +109,7 @@ def compandit(
             )
 
 
-def delFile(
-    show: Path,
-):
+def delFile(show: Path) -> bool:
     """Delete contents of temp folder, unless -k passed"""
     keep = False
     if len(sys.argv) > 1:
@@ -143,8 +123,7 @@ def delFile(
 # File choosing logic
 if not any(pods.iterdir()):
     print(
-        "[bright_red]Work Dir empty: [/bright_red]"
-        + f"{pods.name}"
+        "[bright_red]Work Dir empty: [/bright_red]" + f"{pods.name}"
     )
     if any(Path(outdir).iterdir()):
         print(
@@ -153,37 +132,42 @@ if not any(pods.iterdir()):
             + "[/bright_green]"
         )
 
-for podsAuthor in pods.iterdir():
-    parent = Path(podsAuthor)
-    if parent.is_dir():
-        print(f"[green]{parent.stem}[/green]")
-        parentCompandPath = outdir / parent.stem
-        parentCompandPath.mkdir(exist_ok=True)
-        sortedPaths = sorted(parent.iterdir())
-        for mp3Path in sortedPaths:
-            mp3CompandPath = Path(
-                parentCompandPath / mp3Path.name
-            )
-            if not alreadyCompandt(mp3Path):
-                """Escape whole iteration w/ ctrl C"""
-                try:
+
+def keyboard_escape(func):
+    """Escape whole iteration w/ ctrl C"""
+    def wrap(*args, **kwargs):
+        try:
+            func()
+        except KeyboardInterrupt:
+            raise KeyboardInterrupt
+    return wrap()
+
+
+@keyboard_escape
+def main():
+    ''' Main file choosing loop '''
+    for podsAuthor in pods.iterdir():
+        parent = Path(podsAuthor)
+        if parent.is_dir():
+            print(f"[green]{parent.stem}[/green]")
+            parentCompandPath = outdir / parent.stem
+            parentCompandPath.mkdir(exist_ok=True)
+            sortedPaths = sorted(parent.iterdir())
+            for mp3Path in sortedPaths:
+                mp3CompandPath = Path(parentCompandPath / mp3Path.name)
+                if not alreadyCompandt(mp3Path):
                     compandit(
                         mp3Path,
                         mp3CompandPath,
                         sr=SR,
                         srmath=True,
                     )
-                    # Extract and Place APIC images in file
-                except KeyboardInterrupt:
-                    raise
-                    break
-                delFile(mp3Path)
-            else:  # Just move the already-compandt w/ the rest
-                mp3Path.replace(mp3CompandPath)
+                    # TODO: Extract and Place APIC images in file
+                    delFile(mp3Path)
+                else:  # move the already-compandt w/ the rest
+                    mp3Path.replace(mp3CompandPath)
 
-        parent.rmdir()
-        if not any(parentCompandPath.iterdir()):
-            print(
-                f"[red]Nothing in[/red] {parentCompandPath.name}"
-            )
-            parentCompandPath.rmdir()
+            parent.rmdir()
+            if not any(parentCompandPath.iterdir()):
+                print(f"[red]Nothing in[/red] {parentCompandPath.name}")
+                parentCompandPath.rmdir()
