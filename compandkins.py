@@ -6,7 +6,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 import ffmpeg  # type: ignore
-import ffpb  # type: ignore
+# import ffrich  # type: ignore
+import ffrich  # type: ignore
 from rich import print
 
 """ Edited path"""
@@ -21,7 +22,7 @@ SR = True
 class Prober:
     """FFprobe streams"""
 
-    file: str
+    file: Path | str
 
     def __post_init__(self):
         try:
@@ -50,7 +51,7 @@ def alreadyCompandt(i: Path) -> bool:
 
 
 def compandit(i, o, sr=False, srmath=False):
-    """Compand with ffmpeg, progress bar with ffpb"""
+    """Compand with ffmpeg, progress bar with ffrich"""
     i = str(i)
     o = str(o)
     probe = Prober(i)
@@ -95,7 +96,7 @@ def compandit(i, o, sr=False, srmath=False):
     #    ffmpeg.run()
     args = ffmpeg.compile(stream)
 
-    ffpb.main(args[1:])
+    ffrich.main(args[1:])
 
     if srmath and Path(o).is_file():  # show savings!
         d1 = float(probe.duration)
@@ -140,10 +141,10 @@ def keyboard_escape(func):
             func()
         except KeyboardInterrupt:
             raise KeyboardInterrupt
-    return wrap()
+    return wrap
 
 
-@keyboard_escape
+# @keyboard_escape
 def main():
     ''' Main file choosing loop '''
     for podsAuthor in pods.iterdir():
@@ -171,3 +172,7 @@ def main():
             if not any(parentCompandPath.iterdir()):
                 print(f"[red]Nothing in[/red] {parentCompandPath.name}")
                 parentCompandPath.rmdir()
+
+
+if __name__ == "__main__":
+    main()
