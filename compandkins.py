@@ -6,16 +6,16 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 import ffmpeg  # type: ignore
-# import ffrich  # type: ignore
 import ffrich  # type: ignore
 from rich import print
 
 """ Edited path"""
 outdir = Path.home() / "storage/shared/" / "antennapodcomp"
 """ Input path """
-pods = Path.home() / "storage/shared" / "antennapods"
+#pods = Path.home() / "storage/shared" / "antennapods"
+pods = Path('/storage/emulated/0/Android/media/de.danoeh.antennapod/media')
 """ Silence reduction """
-SR = True
+SR = False
 
 
 @dataclass
@@ -80,14 +80,11 @@ def compandit(i, o, sr=False, srmath=False):
             stop_duration="0.2",  # was 0.2
             stop_threshold="-31dB",  # was -29dB
         )
-    """ originally
-    audio_bitrate=probe.bitrate
-    but I am using 64k to save space 😞 """
     stream = ffmpeg.output(
         audio,
         o,
         f="mp3",
-        audio_bitrate="64k",
+        audio_bitrate=probe.bitrate,
         metadata="comment=compandt",
         map="0:1?",
     )  # saves thumbnail
@@ -152,7 +149,7 @@ def main():
         if parent.is_dir():
             print(f"[green]{parent.stem}[/green]")
             parentCompandPath = outdir / parent.stem
-            parentCompandPath.mkdir(exist_ok=True)
+            parentCompandPath.mkdir(parents=True,exist_ok=True)
             sortedPaths = sorted(parent.iterdir())
             for mp3Path in sortedPaths:
                 mp3CompandPath = Path(parentCompandPath / mp3Path.name)

@@ -12,7 +12,6 @@ Change paths `pods` and `outdir` to your preferred directories. `pods` should co
 Please look at the source to find more information about the silence-removal option,
 
 # Caveats
-- This script rakes no arguments, command line options, nor config file.
+- This script takes no arguments, command line options, nor config file.
 - The source must be changed to suit individual cases.
 - Images are lost in the conversion.
-- I have downgraded conversions to 64 kbps to save space.
